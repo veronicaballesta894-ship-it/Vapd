@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAPD - Orientador Vocacional</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+.fade-in{animation:fadeIn .4s ease-in-out}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.canva-card{transition:all .3s ease}.canva-card:hover{transform:translateY(-4px);box-shadow:0 15px 20px -5px rgba(0,0,0,.1)}
+.neon-border{box-shadow:0 0 10px rgba(255,20,147,.4),0 0 20px rgba(0,255,255,.4)}
+</style>
+</head>
+<body class="bg-teal-50 text-slate-800 font-sans min-h-screen p-4 md:p-8">
+<header class="text-center mb-8 fade-in">
+<div class="w-32 h-32 rounded-full mx-auto mb-3 border-4 border-teal-300 neon-border bg-slate-900 flex items-center justify-center text-teal-400 font-bold text-xl">VAPD</div>
+<h1 class="text-3xl font-extrabold text-teal-900 tracking-tight">Test Vocacional Inteligente</h1>
+<p class="text-sm text-teal-700 mt-1">Responde el cuestionario o elige una carrera para conocerla y superar su reto.</p>
+</header>
+
+<main class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-white rounded-3xl p-6 shadow-xl border border-teal-100 fade-in">
+<div id="test-section">
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-xl font-bold border-b-2 border-pink-400 pb-1">Cuestionario de Intereses</h2>
+<span id="step-indicator" class="text-xs font-bold bg-teal-100 text-teal-800 px-3 py-1 rounded-full"></span>
+</div>
+<div class="w-full bg-gray-200 rounded-full h-2 mb-6"><div id="progress-bar" class="bg-teal-500 h-2 rounded-full transition-all duration-300"></div></div>
+<h3 id="question-text" class="text-lg font-semibold mb-4 text-slate-700"></h3>
+<div class="space-y-3" id="options-container"></div>
+</div>
+
+<div id="result-section" class="hidden fade-in">
+<div class="flex justify-between items-center mb-4">
+<div><span id="career-category" class="text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider bg-pink-100 text-pink-800"></span>
+<h2 id="career-title" class="text-2xl font-extrabold text-teal-900 mt-1"></h2></div>
+<button onclick="resetTest()" class="text-xs bg-slate-200 hover:bg-slate-300 px-3 py-2 rounded-xl font-semibold">Reiniciar Test</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-gradient-to-br from-teal-50 to-teal-100 p-5 rounded-2xl border border-teal-200">
+<h4 class="font-bold text-teal-800 mb-1 text-sm">Perfil Profesional</h4>
+<p id="career-desc" class="text-xs text-slate-600 mb-3"></p>
+<h4 class="font-bold text-teal-800 mb-1 text-sm">Habilidades Clave</h4>
+<ul id="career-skills" class="list-disc pl-4 text-xs text-slate-600 space-y-1"></ul>
+</div>
+<div class="bg-slate-900 text-white p-5 rounded-2xl neon-border relative">
+<div class="absolute top-0 right-0 bg-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">SIMULADOR</div>
+<h4 class="font-bold text-pink-400 mb-2 text-sm">Obstáculo del Ámbito</h4>
+<p id="obstacle-text" class="text-xs text-slate-300 mb-3"></p>
+<p class="text-xs font-semibold mb-2 text-teal-300">¿Cómo lo resolverías?</p>
+<div id="obstacle-options" class="space-y-2"></div>
+<div id="obstacle-feedback" class="mt-3 hidden text-xs font-bold p-2 rounded"></div>
+</div></div>
+</div></div>
+
+<div class="bg-white rounded-3xl p-5 shadow-xl border border-teal-100 max-h-[75vh] overflow-y-auto fade-in">
+<h3 class="text-lg font-bold mb-2 sticky top-0 bg-white pb-2 border-b-2 border-teal-200 z-10">Las 20 Carreras</h3>
+<p class="text-xs text-slate-500 mb-3">Toca una carrera para verla.</p>
+<div class="grid grid-cols-2 gap-2" id="careers-list"></div>
+</div>
+</main>
+
+<script>
+const careersData = [
+{name:'Ingeniería de Software',cat:'Tecnología',icon:'💻',desc:'Creas arquitecturas de software, aplicaciones y sistemas robustos para empresas.',skills:['Lógica de programación','Estructuras de datos'],obs:'Un fallo masivo deja sin servicio la plataforma en plena hora pico.',right:'Aislar el microservicio afectado y activar el clúster de respaldo.',wrong:'Apagar todos los servidores de la compañía de inmediato.'},
+{name:'Ciencia de Datos',cat:'Tecnología',icon:'📈',desc:'Analizas grandes volúmenes de datos para predecir tendencias.',skills:['Estadística avanzada','Python / R y Machine Learning'],obs:'Tu modelo predictivo arroja un sesgo grave.',right:'Auditar los datos de entrada y reentrenar el algoritmo.',wrong:'Ignorar el sesgo porque las cifras generales se ven bien.'},
+{name:'Ciberseguridad',cat:'Tecnología',icon:'🛡️',desc:'Proteges redes y sistemas frente a amenazas informáticas.',skills:['Redes y cortafuegos','Criptografía y ética hacking'],obs:'Detectas una filtración de credenciales corporativas.',right:'Revocar sesiones, forzar cambios de contraseña y rastrear la brecha.',wrong:'Esperar a ver qué hacen los atacantes.'},
+{name:'Desarrollo Web',cat:'Tecnología',icon:'🌐',desc:'Construyes experiencias digitales interactivas y accesibles.',skills:['HTML/CSS/JS','Diseño responsive'],obs:'La interfaz se rompe en dispositivos móviles antiguos.',right:'Revisar CSS y aplicar media queries correctas.',wrong:'Pedir a los usuarios que compren un teléfono nuevo.'},
+{name:'Medicina General',cat:'Salud',icon:'🩺',desc:'Diagnosticas, tratas pacientes y promueves la salud.',skills:['Razonamiento clínico','Empatía'],obs:'Llega un paciente con síntomas que no encajan con un diagnóstico rápido.',right:'Hacer una historia detallada, pruebas y descartar urgencias.',wrong:'Recetar medicamentos al azar.'},
+{name:'Psicología Clínica',cat:'Salud',icon:'🧠',desc:'Evalúas y acompañas problemas emocionales y conductuales.',skills:['Escucha activa','Comprensión psicopatológica'],obs:'Un paciente se resiste a hablar en sesión.',right:'Validar emociones, crear un espacio seguro y avanzar a su ritmo.',wrong:'Confrontarlo para obligarlo a hablar.'},
+{name:'Odontología',cat:'Salud',icon:'🦷',desc:'Previenes y tratas afecciones de la salud bucal.',skills:['Destreza manual','Cuidado clínico'],obs:'Durante un procedimiento el paciente presenta ansiedad.',right:'Pausar, tranquilizar y reevaluar.',wrong:'Continuar ignorando su estado.'},
+{name:'Veterinaria',cat:'Salud',icon:'🐾',desc:'Cuidas la salud y bienestar de animales.',skills:['Cirugía animal','Manejo de especies'],obs:'Un animal llega intoxicado y se desconoce la sustancia.',right:'Dar soporte y realizar pruebas toxicológicas urgentes.',wrong:'Esperar a que se recupere solo.'},
+{name:'Diseño Gráfico',cat:'Artes',icon:'🎨',desc:'Comunicas ideas mediante composiciones visuales.',skills:['Teoría del color','Software creativo'],obs:'El cliente rechaza tu propuesta antes de la entrega.',right:'Analizar críticas y ajustar conceptos clave.',wrong:'Discutir agresivamente con el cliente.'},
+{name:'Arquitectura',cat:'Artes',icon:'🏛️',desc:'Diseñas espacios funcionales, seguros y estéticos.',skills:['Diseño espacial y CAD','Cálculo estructural'],obs:'Una tubería cruza el eje principal del diseño.',right:'Modificar el plano e integrar la tubería armónicamente.',wrong:'Ocultar el error.'},
+{name:'Animación Digital',cat:'Artes',icon:'🎬',desc:'Creas personajes y escenarios 2D/3D.',skills:['Principios de animación','Modelado y rigging 3D'],obs:'El render final tarda demasiado y falla.',right:'Optimizar modelos y luces.',wrong:'Dejarlo renderizando sin revisar.'},
+{name:'Diseño de Modas',cat:'Artes',icon:'👗',desc:'Creas prendas y colecciones textiles innovadoras.',skills:['Patronaje y costura','Materiales'],obs:'El proveedor se queda sin tela antes de la pasarela.',right:'Buscar materiales alternativos que conserven el concepto.',wrong:'Cancelar la colección.'},
+{name:'Admin. de Empresas',cat:'Negocios',icon:'📊',desc:'Diriges operaciones, recursos y equipos.',skills:['Liderazgo','Decisiones financieras'],obs:'Dos departamentos entran en conflicto operativo.',right:'Mediar, alinear metas y mejorar procesos.',wrong:'Despedir a los jefes sin investigar.'},
+{name:'Marketing Digital',cat:'Negocios',icon:'📱',desc:'Diseñas estrategias de marca y adquisición online.',skills:['Analítica y SEO/SEM','Psicología del consumidor'],obs:'Una campaña costosa tiene baja conversión.',right:'Revisar métricas, segmentación y creativos.',wrong:'Duplicar el presupuesto.'},
+{name:'Contabilidad',cat:'Negocios',icon:'📉',desc:'Gestionas estados financieros y cumplimiento fiscal.',skills:['Normas financieras','Precisión numérica'],obs:'Encuentras una discrepancia antes de una auditoría.',right:'Rastrear los asientos hasta hallar el origen.',wrong:'Ajustar artificialmente los números.'},
+{name:'Negocios Internac.',cat:'Negocios',icon:'🌍',desc:'Gestionas comercio exterior y expansión global.',skills:['Negociación intercultural','Logística global'],obs:'Un cargamento queda retenido en aduana.',right:'Contactar al agente aduanal para tramitar permisos.',wrong:'Abandonar la mercancía.'},
+{name:'Biología Marina',cat:'Ciencias',icon:'🐠',desc:'Investigas ecosistemas oceánicos y conservación.',skills:['Muestreo ecológico','Análisis de agua'],obs:'Detectas un descenso inusual de corales.',right:'Tomar muestras de temperatura, pH y contaminantes.',wrong:'Ignorarlo.'},
+{name:'Ing. Ambiental',cat:'Ciencias',icon:'🌱',desc:'Desarrollas proyectos para reducir impactos ambientales.',skills:['Gestión de residuos','Impacto ecológico'],obs:'Una planta supera límites de vertidos contaminantes.',right:'Contener la emergencia y mejorar filtración.',wrong:'Ocultar los reportes.'},
+{name:'Derecho',cat:'Sociales',icon:'⚖️',desc:'Interpretas normas, argumentas y asesoras jurídicamente.',skills:['Oratoria','Interpretación de leyes'],obs:'Aparece una prueba que debilita tu defensa.',right:'Solicitar un receso y replantear la estrategia.',wrong:'Abandonar la audiencia.'},
+{name:'Periodismo',cat:'Sociales',icon:'📰',desc:'Investigas y comunicas información veraz.',skills:['Verificación de fuentes','Redacción objetiva'],obs:'Recibes una primicia pero una fuente pide anonimato.',right:'Contrastar con fuentes independientes antes de publicar.',wrong:'Publicar el rumor sin verificar.'}
+];
+
+const questions=[
+'¿Qué entorno te atrae más para trabajar?',
+'Cuando enfrentas un proyecto difícil, ¿qué prefieres?',
+'¿Qué actividad disfrutas más en tu tiempo libre?',
+'¿Qué herramienta te sentirías más cómodo usando?',
+'Si tuvieras que elegir una misión laboral, ¿cuál sería?',
+'¿Cómo prefieres medir el éxito de tu trabajo?'
+];
+const areas=['Tecnología','Salud','Artes','Negocios','Ciencias','Sociales'];
+const optionTexts=[
+['💻 Pantallas, problemas lógicos o código.','🏥 Hospitales, clínicas o laboratorios.','🎨 Estudios creativos y diseño.','📊 Oficinas, proyectos y equipos.','🌿 Naturaleza o laboratorios de campo.','⚖️ Tribunales, medios o debate social.'],
+['Buscar patrones y programar una solución.','Investigar el bienestar de las personas.','Crear una identidad visual impactante.','Organizar tiempos, roles y estrategia.','Recopilar datos y medir variables.','Argumentar con fundamentos de justicia.'],
+['Armar computadoras o programar.','Leer sobre biología o psicología.','Dibujar, modelar o rediseñar espacios.','Organizar emprendimientos o liderar.','Ver documentales de animales o ecología.','Debatir sobre historia y actualidad.'],
+['Editores de código y bases de datos.','Instrumentos clínicos.','Software de diseño y modelado.','Hojas de cálculo y tableros.','Microscopios y herramientas de campo.','Normas, códigos y entrevistas.'],
+['Automatizar y digitalizar el futuro.','Ayudar a la salud y bienestar.','Crear un legado visual y artístico.','Crear empresas y generar valor.','Descubrir y proteger la naturaleza.','Defender derechos y comunicar la verdad.'],
+['Sistemas estables y eficientes.','Personas que reciben ayuda.','Impacto visual y creativo.','Resultados y crecimiento.','Descubrimientos y conservación.','Justicia e información confiable.']
+];
+
+let step=0, scores=Object.fromEntries(areas.map(a=>[a,0]));
+
+const list=document.getElementById('careers-list');
+careersData.forEach((c,i)=>{
+ list.innerHTML+=`<button onclick="selectCareer(${i})" class="p-2.5 border border-gray-100 rounded-xl hover:bg-teal-50 hover:border-teal-400 transition cursor-pointer text-center flex flex-col items-center justify-center canva-card bg-white shadow-sm"><span class="text-xl mb-1">${c.icon}</span><span class="text-[11px] font-semibold leading-tight">${c.name}</span></button>`;
+});
+
+function renderQuestion(){
+ document.getElementById('step-indicator').textContent=`Pregunta ${step+1} de ${questions.length}`;
+ document.getElementById('progress-bar').style.width=`${((step+1)/questions.length)*100}%`;
+ document.getElementById('question-text').textContent=questions[step];
+ const box=document.getElementById('options-container'); box.innerHTML='';
+ optionTexts[step].forEach((text,i)=>{
+  const b=document.createElement('button');
+  b.className='w-full text-left p-3 rounded-xl border border-slate-200 hover:border-teal-400 hover:bg-teal-50 transition text-sm';
+  b.textContent=text; b.onclick=()=>answer(i); box.appendChild(b);
+ });
+}
+function answer(i){
+ scores[areas[i]]++;
+ if(step<questions.length-1){step++;renderQuestion();}else{
+  const best=areas.reduce((a,b)=>scores[b]>scores[a]?b:a);
+  const idx=careersData.findIndex(c=>c.cat===best);
+  selectCareer(idx);
+ }
+}
+function selectCareer(i){
+ const c=careersData[i];
+ document.getElementById('test-section').classList.add('hidden');
+ document.getElementById('result-section').classList.remove('hidden');
+ document.getElementById('career-category').textContent=c.cat;
+ document.getElementById('career-title').textContent=`${c.icon} ${c.name}`;
+ document.getElementById('career-desc').textContent=c.desc;
+ document.getElementById('career-skills').innerHTML=c.skills.map(s=>`<li>${s}</li>`).join('');
+ document.getElementById('obstacle-text').textContent=c.obs;
+ const opts=document.getElementById('obstacle-options'); opts.innerHTML='';
+ [c.right,c.wrong].sort(()=>Math.random()-.5).forEach((text)=> {
+  const b=document.createElement('button'); b.className='w-full text-left text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition';
+  b.textContent=text; b.onclick=()=>feedback(text===c.right); opts.appendChild(b);
+ });
+ document.getElementById('obstacle-feedback').classList.add('hidden');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function feedback(ok){
+ const f=document.getElementById('obstacle-feedback'); f.classList.remove('hidden');
+ f.className='mt-3 text-xs font-bold p-2 rounded '+(ok?'bg-emerald-500/20 text-emerald-300':'bg-red-500/20 text-red-300');
+ f.textContent=ok?'¡Excelente! Es una estrategia responsable y efectiva.':'No es la mejor opción. Piensa en analizar el problema antes de actuar.';
+}
+function resetTest(){
+ step=0;scores=Object.fromEntries(areas.map(a=>[a,0]));
+ document.getElementById('result-section').classList.add('hidden');
+ document.getElementById('test-section').classList.remove('hidden');
+ renderQuestion();
+}
+renderQuestion();
+</script>
+</body>
+</html>
